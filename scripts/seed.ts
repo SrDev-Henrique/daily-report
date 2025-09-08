@@ -12,12 +12,14 @@ async function seed() {
       email: "henrique@example.com",
       password_hash: "password",
       role: "operator",
+      id: 1,
     },
     {
       name: "Juliana",
       email: "sup@example.com",
       password_hash: "password",
       role: "supervisor",
+      id: 2,
     },
   ]);
 
