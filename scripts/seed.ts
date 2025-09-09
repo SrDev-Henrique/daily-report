@@ -1,7 +1,7 @@
 // scripts/seed.ts
-import "dotenv/config";
 import { db } from "../src/drizzle/db";
 import { users } from "../src/drizzle/schema/user";
+import "dotenv/config";
 import { rounds } from "../src/drizzle/schema/rounds";
 
 async function seed() {
@@ -31,8 +31,8 @@ async function seed() {
   // cria algumas rondas
   await db.insert(rounds).values([
     {
-      time: now,
-      user_id: 7,
+      time: today,
+      user_id: 1,
       status: "pendente",
       checklist: {
         limpeza: {

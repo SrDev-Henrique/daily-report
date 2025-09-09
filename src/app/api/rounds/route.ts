@@ -4,7 +4,12 @@ import { NextResponse } from "next/server";
 import { db } from "@/drizzle/db";
 import { rounds } from "@/drizzle/schema/rounds";
 import { z } from "zod";
-import { createRoundSchema, deleteSchema, updateRoundSchema } from "@/lib/schema/rounds";
+import {
+  createRoundSchema,
+  deleteSchema,
+  updateRoundSchema,
+} from "@/lib/schema/rounds";
+import type { UpdateData } from "@/lib/schema/types";
 
 /**
  * GET
@@ -75,7 +80,7 @@ export async function POST(request: Request) {
       const parse = updateRoundSchema.safeParse(body);
       if (!parse.success) {
         return NextResponse.json(
-          { error: parse.error.format() },
+          { error: parse.error.issues },
           { status: 400 }
         );
       }
@@ -84,12 +89,16 @@ export async function POST(request: Request) {
       const id = data.id;
 
       // build do objeto update com os campos que vieram
-      const updateData: Record<string, any> = {};
-      if (data.time !== undefined) updateData.time = new Date(data.time);
-      if (data.user_id !== undefined) updateData.user_id = data.user_id;
-      if (data.status !== undefined) updateData.status = data.status;
-      if (data.checklist !== undefined) updateData.checklist = data.checklist;
-      if (data.notes !== undefined) updateData.notes = data.notes;
+      const updateData: Record<string, UpdateData> = {};
+      if (data.time !== undefined)
+        updateData.time = new Date(data.time) as UpdateData;
+      if (data.user_id !== undefined)
+        updateData.user_id = data.user_id as UpdateData;
+      if (data.status !== undefined)
+        updateData.status = data.status as UpdateData;
+      if (data.checklist !== undefined)
+        updateData.checklist = data.checklist as UpdateData;
+      if (data.notes !== undefined) updateData.notes = data.notes as UpdateData;
 
       if (Object.keys(updateData).length === 0) {
         return NextResponse.json(
@@ -117,10 +126,7 @@ export async function POST(request: Request) {
     // create path
     const parsed = createRoundSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: parsed.error.format() },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: parsed.error.issues }, { status: 400 });
     }
     const valid = parsed.data;
 
@@ -209,7 +215,7 @@ export async function DELETE(request: Request) {
     // valida usando o deleteSchema para ter garantia extra
     const d = deleteSchema.safeParse({ id });
     if (!d.success) {
-      return NextResponse.json({ error: d.error.format() }, { status: 400 });
+      return NextResponse.json({ error: d.error.issues }, { status: 400 });
     }
 
     const deleted = await db
