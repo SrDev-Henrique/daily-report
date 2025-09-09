@@ -35,7 +35,7 @@ export async function GET(request: Request) {
     const end = new Date(start);
     end.setDate(end.getDate() + 1);
 
-    whereClause = and(gte(rounds.time, start), lt(rounds.time, end));
+    whereClause = and(gte(rounds.created_at, start), lt(rounds.created_at, end));
   }
 
   // filtro por intervalo
@@ -43,7 +43,7 @@ export async function GET(request: Request) {
     const start = new Date(`${startDate}T00:00:00.000Z`);
     const end = new Date(`${endDate}T23:59:59.999Z`);
 
-    whereClause = and(gte(rounds.time, start), lt(rounds.time, end));
+    whereClause = and(gte(rounds.created_at, start), lt(rounds.created_at, end));
   }
 
   // busca com paginação e filtro opcional
@@ -51,7 +51,7 @@ export async function GET(request: Request) {
     .select()
     .from(rounds)
     .where(whereClause || undefined)
-    .orderBy(rounds.time)
+    .orderBy(rounds.created_at)
     .limit(limit)
     .offset(offset);
 
@@ -90,8 +90,8 @@ export async function POST(request: Request) {
 
       // build do objeto update com os campos que vieram
       const updateData: Record<string, UpdateData> = {};
-      if (data.time !== undefined)
-        updateData.time = new Date(data.time) as UpdateData;
+      if (data.created_at !== undefined)
+        updateData.created_at = new Date(data.created_at) as UpdateData;
       if (data.user_id !== undefined)
         updateData.user_id = data.user_id as UpdateData;
       if (data.status !== undefined)
@@ -133,7 +133,7 @@ export async function POST(request: Request) {
     const insertRow = await db
       .insert(rounds)
       .values({
-        time: valid.time ? new Date(valid.time) : new Date(),
+        created_at: valid.created_at ? new Date(valid.created_at) : new Date(),
         user_id: valid.user_id,
         status: valid.status ?? "pendente",
         checklist: valid.checklist ?? {

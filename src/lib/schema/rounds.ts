@@ -24,7 +24,7 @@ export const checklistSchema = z.object({
 // schema para criação de ronda
 export const createRoundSchema = z.object({
   user_id: z.number().int().positive(),
-  time: z.string().optional(), // ISO string
+  created_at: z.string().optional(), // ISO string
   status: statusEnum.optional(),
   checklist: checklistSchema.optional(),
   notes: z.string().nullable().optional(),
@@ -35,7 +35,7 @@ export const updateRoundSchema = z
   .object({
     id: z.number().int().positive(),
     user_id: z.number().int().positive().optional(),
-    time: z.string().optional(),
+    created_at: z.string().optional(),
     status: statusEnum.optional(),
     checklist: checklistSchema.optional(),
     notes: z.string().nullable().optional(),

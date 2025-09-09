@@ -31,7 +31,7 @@ async function seed() {
   // cria algumas rondas
   await db.insert(rounds).values([
     {
-      time: today,
+      created_at: today,
       user_id: 1,
       status: "pendente",
       checklist: {
