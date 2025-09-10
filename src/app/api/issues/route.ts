@@ -1,19 +1,15 @@
-// src/app/api/rounds/route.ts
-import { and, gte, lte, eq } from "drizzle-orm";
-import { NextResponse } from "next/server";
+import { and, eq, gte, lt } from "drizzle-orm";
+import { issues } from "@/drizzle/schema/issues";
 import { db } from "@/drizzle/db";
-import { rounds } from "@/drizzle/schema/rounds";
-import { z } from "zod";
 import {
-  createRoundSchema,
-  deleteSchema,
-  updateRoundSchema,
-} from "@/lib/schema/rounds";
-import type { RoundsUpdateData } from "@/lib/schema/types";
+  createIssueSchema,
+  updateIssueSchema,
+  deleteIssueSchema,
+} from "@/lib/schema/issues";
+import type { IssueUpdateData } from "@/lib/schema/types";
+import { NextResponse } from "next/server";
+import { z } from "zod";
 
-/**
- * GET
- */
 export async function GET(request: Request) {
   const url = new URL(request.url);
 
@@ -29,22 +25,35 @@ export async function GET(request: Request) {
 
   let whereClause = undefined;
 
-  // filtro por date (coluna é do tipo date/string no Drizzle)
+  // filtro por date
   if (date) {
-    whereClause = eq(rounds.date, date);
+    const start = new Date(`${date}T00:00:00.000Z`);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 1);
+
+    whereClause = and(
+      gte(issues.created_at, start),
+      lt(issues.created_at, end)
+    );
   }
 
-  // filtro por intervalo (usar strings YYYY-MM-DD)
+  // filtro por intervalo
   if (startDate && endDate) {
-    whereClause = and(gte(rounds.date, startDate), lte(rounds.date, endDate));
+    const start = new Date(`${startDate}T00:00:00.000Z`);
+    const end = new Date(`${endDate}T23:59:59.999Z`);
+
+    whereClause = and(
+      gte(issues.created_at, start),
+      lt(issues.created_at, end)
+    );
   }
 
   // busca com paginação e filtro opcional
   const rows = await db
     .select()
-    .from(rounds)
+    .from(issues)
     .where(whereClause || undefined)
-    .orderBy(rounds.date)
+    .orderBy(issues.created_at)
     .limit(limit)
     .offset(offset);
 
@@ -59,10 +68,6 @@ export async function GET(request: Request) {
   });
 }
 
-/**
- * POST -> cria ou atualiza (se body.id existir)
- * - valida com zod
- */
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -70,7 +75,7 @@ export async function POST(request: Request) {
     // update path (se veio id)
     if (body?.id) {
       // validação do body de update
-      const parse = updateRoundSchema.safeParse(body);
+      const parse = updateIssueSchema.safeParse(body);
       if (!parse.success) {
         return NextResponse.json(
           { error: parse.error.issues },
@@ -82,27 +87,17 @@ export async function POST(request: Request) {
       const id = data.id;
 
       // build do objeto update com os campos que vieram
-      const updateData: Record<string, RoundsUpdateData> = {};
-      if (data.date !== undefined)
-        updateData.date = data.date as RoundsUpdateData;
+      const updateData: Record<string, IssueUpdateData> = {};
       if (data.created_at !== undefined)
-        updateData.created_at = new Date(data.created_at) as RoundsUpdateData;
-      if (data.index !== undefined)
-        updateData.index = data.index as RoundsUpdateData;
-      if (data.started_at !== undefined)
-        updateData.started_at = new Date(data.started_at) as RoundsUpdateData;
-      if (data.finished_at !== undefined)
-        updateData.finished_at = new Date(data.finished_at) as RoundsUpdateData;
-      if (data.duration !== undefined)
-        updateData.duration = data.duration as RoundsUpdateData;
-      if (data.user_id !== undefined)
-        updateData.user_id = data.user_id as RoundsUpdateData;
-      if (data.status !== undefined)
-        updateData.status = data.status as RoundsUpdateData;
-      if (data.checklist !== undefined)
-        updateData.checklist = data.checklist as RoundsUpdateData;
-      if (data.notes !== undefined)
-        updateData.notes = data.notes as RoundsUpdateData;
+        updateData.created_at = new Date(data.created_at) as IssueUpdateData;
+      if (data.round_id !== undefined)
+        updateData.round_id = data.round_id as IssueUpdateData;
+      if (data.category !== undefined)
+        updateData.category = data.category as IssueUpdateData;
+      if (data.severity !== undefined)
+        updateData.severity = data.severity as IssueUpdateData;
+      if (data.description !== undefined)
+        updateData.description = data.description as IssueUpdateData;
 
       if (Object.keys(updateData).length === 0) {
         return NextResponse.json(
@@ -112,14 +107,14 @@ export async function POST(request: Request) {
       }
 
       const updated = await db
-        .update(rounds)
+        .update(issues)
         .set(updateData)
-        .where(eq(rounds.id, id))
+        .where(eq(issues.id, id))
         .returning();
 
       if (!updated || updated.length === 0) {
         return NextResponse.json(
-          { error: "Ronda não encontrada" },
+          { error: "Problema não encontrado" },
           { status: 404 }
         );
       }
@@ -128,45 +123,27 @@ export async function POST(request: Request) {
     }
 
     // create path
-    const parsed = createRoundSchema.safeParse(body);
+    const parsed = createIssueSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json({ error: parsed.error.issues }, { status: 400 });
     }
     const valid = parsed.data;
 
     const insertRow = await db
-      .insert(rounds)
+      .insert(issues)
       .values({
-        date: valid.date,
-        index: valid.index,
+        id: valid.id as number,
+        round_id: valid.round_id as number,
+        category: valid.category as "técnico" | "atendimento" | "limpeza" | "buffet" | "outro",
+        severity: valid.severity as "baixa" | "media" | "alta" | "urgente",
+        description: valid.description as string,
         created_at: valid.created_at ? new Date(valid.created_at) : new Date(),
-        user_id: valid.user_id,
-        started_at: valid.started_at ? new Date(valid.started_at) : null,
-        finished_at: valid.finished_at ? new Date(valid.finished_at) : null,
-        duration: valid.duration ? valid.duration : null,
-        status: valid.status ?? "pendente",
-        checklist: valid.checklist ?? {
-          limpeza: {
-            salao: "pendente",
-            banheiro_masculino: "pendente",
-            banheiro_hc_masculino: "pendente",
-            banheiro_feminino: "pendente",
-            banheiro_hc_feminino: "pendente",
-            copa: "pendente",
-            area_servico: "pendente",
-            area_cozinha: "pendente",
-            area_bar: "pendente",
-          },
-          buffet: "pendente",
-          geladeira: "pendente",
-        },
-        notes: valid.notes ?? null,
       })
       .returning();
 
     return NextResponse.json(insertRow[0], { status: 201 });
   } catch (error) {
-    console.error("POST /api/rounds error:", error);
+    console.error("POST /api/issues error:", error);
     return NextResponse.json(
       { error: "Erro interno ao processar request" },
       { status: 500 }
@@ -174,9 +151,6 @@ export async function POST(request: Request) {
   }
 }
 
-/**
- * DELETE -> aceita ?id=123 ou body { id: 123 } e valida com zod
- */
 export async function DELETE(request: Request) {
   try {
     const url = new URL(request.url);
@@ -222,28 +196,28 @@ export async function DELETE(request: Request) {
     }
 
     // valida usando o deleteSchema para ter garantia extra
-    const d = deleteSchema.safeParse({ id });
+    const d = deleteIssueSchema.safeParse({ id });
     if (!d.success) {
       return NextResponse.json({ error: d.error.issues }, { status: 400 });
     }
 
     const deleted = await db
-      .delete(rounds)
-      .where(eq(rounds.id, id))
+      .delete(issues)
+      .where(eq(issues.id, id))
       .returning();
 
     if (!deleted || deleted.length === 0) {
       return NextResponse.json(
-        { error: "Ronda não encontrada" },
+        { error: "Problema não encontrado" },
         { status: 404 }
       );
     }
 
     return NextResponse.json({ success: true, deleted: deleted[0] });
   } catch (error) {
-    console.error("DELETE /api/rounds error:", error);
+    console.error("DELETE /api/issues error:", error);
     return NextResponse.json(
-      { error: "Erro interno ao deletar ronda" },
+      { error: "Erro interno ao deletar problema" },
       { status: 500 }
     );
   }

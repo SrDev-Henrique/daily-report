@@ -1,3 +1,5 @@
+export type status = "ok" | "pendente" | "em progresso" | "não feito";
+
 export type Checklist = {
   limpeza: {
     salao: status;
@@ -14,12 +16,29 @@ export type Checklist = {
   geladeira: status;
 };
 
-export type UpdateData = {
+export type RoundsUpdateData = {
+  date?: string;
   created_at?: Date;
   user_id?: number;
-  status?: string;
+  status?: status;
   checklist?: Checklist;
   notes?: string | null;
+  started_at?: Date;
+  finished_at?: Date;
+  duration?: number;
 };
 
-export type status = "ok" | "pendente" | "não feito";
+export type FeedbackUpdateData = {
+  created_at?: Date;
+  user_id?: number;
+  type?: string;
+  text?: string;
+};
+
+export type IssueUpdateData = {
+  created_at?: Date;
+  round_id?: number;
+  category?: string;
+  severity?: string;
+  description?: string;
+};

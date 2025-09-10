@@ -8,17 +8,25 @@ import {
   serial,
   timestamp,
   text,
+  date,
 } from "drizzle-orm/pg-core";
 import { users } from "./user";
 import type { Checklist } from "@/lib/schema/types";
 
-export const checklistStatus = ["ok", "pendente", "não feito"] as const;
+export const checklistStatus = ["ok", "pendente", "em progresso", "não feito"] as const;
 
 export const checklistStatusEnum = pgEnum("checklist_status", checklistStatus);
 
 export const rounds = pgTable("rounds", {
   id: serial("id").primaryKey(),
-  created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  date: date("date").notNull(),
+  index: integer("index").notNull(),
+  created_at: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+  started_at: timestamp("started_at", { withTimezone: true }),
+  finished_at: timestamp("finished_at", { withTimezone: true }),
+  duration: integer("duration"),
   user_id: integer("user_id")
     .references(() => users.id)
     .notNull(),

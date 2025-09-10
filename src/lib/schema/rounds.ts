@@ -1,10 +1,7 @@
 import { z } from "zod";
 
+export const statusEnum = z.enum(["ok", "pendente", "em progresso", "não feito"]);
 
-// valores possíveis para cada área de limpeza / buffet / geladeira
-export const statusEnum = z.enum(["ok", "pendente", "não feito"]);
-
-// checklist detalhado
 export const checklistSchema = z.object({
   limpeza: z.object({
     salao: statusEnum,
@@ -21,28 +18,38 @@ export const checklistSchema = z.object({
   geladeira: statusEnum,
 });
 
-// schema para criação de ronda
+const optionalIsoString = z.string().optional();
+
 export const createRoundSchema = z.object({
+  id: z.number().int().positive(),
   user_id: z.number().int().positive(),
-  created_at: z.string().optional(), // ISO string
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "date must be YYYY-MM-DD"),
+  index: z.number().int().positive(),
+  created_at: optionalIsoString,
+  started_at: optionalIsoString,
+  finished_at: optionalIsoString,
+  duration: z.number().optional(),
   status: statusEnum.optional(),
   checklist: checklistSchema.optional(),
   notes: z.string().nullable().optional(),
 });
 
-// schema para atualização (id obrigatório, resto parcial)
 export const updateRoundSchema = z
   .object({
     id: z.number().int().positive(),
     user_id: z.number().int().positive().optional(),
-    created_at: z.string().optional(),
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "date must be YYYY-MM-DD"),
+    index: z.number().int().min(0).max(9),
+    created_at: optionalIsoString,
+    started_at: optionalIsoString,
+    finished_at: optionalIsoString,
+    duration: z.number().int().nonnegative().optional(),
     status: statusEnum.optional(),
     checklist: checklistSchema.optional(),
     notes: z.string().nullable().optional(),
   })
   .strict();
 
-// schema para delete (aceita id como string/query transformada a number)
 export const deleteSchema = z.object({
   id: z.number().int().positive(),
 });
