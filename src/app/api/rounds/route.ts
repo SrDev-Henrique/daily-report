@@ -4,12 +4,8 @@ import { NextResponse } from "next/server";
 import { db } from "@/drizzle/db";
 import { rounds } from "@/drizzle/schema/rounds";
 import { z } from "zod";
-import {
-  createRoundSchema,
-  deleteSchema,
-  updateRoundSchema,
-} from "@/lib/schema/rounds";
-import type { RoundsUpdateData } from "@/lib/schema/types";
+import { createRoundSchema, deleteSchema } from "@/lib/schema/rounds";
+import type { status as ChecklistStatus } from "@/lib/schema/types";
 
 /**
  * GET
@@ -67,66 +63,6 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
 
-    // update path (se veio id)
-    if (body?.id) {
-      // validação do body de update
-      const parse = updateRoundSchema.safeParse(body);
-      if (!parse.success) {
-        return NextResponse.json(
-          { error: parse.error.issues },
-          { status: 400 }
-        );
-      }
-      const data = parse.data;
-
-      const id = data.id;
-
-      // build do objeto update com os campos que vieram
-      const updateData: Record<string, RoundsUpdateData> = {};
-      if (data.date !== undefined)
-        updateData.date = data.date as RoundsUpdateData;
-      if (data.created_at !== undefined)
-        updateData.created_at = new Date(data.created_at) as RoundsUpdateData;
-      if (data.index !== undefined)
-        updateData.index = data.index as RoundsUpdateData;
-      if (data.started_at !== undefined)
-        updateData.started_at = new Date(data.started_at) as RoundsUpdateData;
-      if (data.finished_at !== undefined)
-        updateData.finished_at = new Date(data.finished_at) as RoundsUpdateData;
-      if (data.duration !== undefined)
-        updateData.duration = data.duration as RoundsUpdateData;
-      if (data.user_id !== undefined)
-        updateData.user_id = data.user_id as RoundsUpdateData;
-      if (data.status !== undefined)
-        updateData.status = data.status as RoundsUpdateData;
-      if (data.checklist !== undefined)
-        updateData.checklist = data.checklist as RoundsUpdateData;
-      if (data.notes !== undefined)
-        updateData.notes = data.notes as RoundsUpdateData;
-
-      if (Object.keys(updateData).length === 0) {
-        return NextResponse.json(
-          { error: "Nenhum campo para atualizar foi fornecido" },
-          { status: 400 }
-        );
-      }
-
-      const updated = await db
-        .update(rounds)
-        .set(updateData)
-        .where(eq(rounds.id, id))
-        .returning();
-
-      if (!updated || updated.length === 0) {
-        return NextResponse.json(
-          { error: "Ronda não encontrada" },
-          { status: 404 }
-        );
-      }
-
-      return NextResponse.json(updated[0]);
-    }
-
     // create path
     const parsed = createRoundSchema.safeParse(body);
     if (!parsed.success) {
@@ -147,18 +83,18 @@ export async function POST(request: Request) {
         status: valid.status ?? "pendente",
         checklist: valid.checklist ?? {
           limpeza: {
-            salao: "pendente",
-            banheiro_masculino: "pendente",
-            banheiro_hc_masculino: "pendente",
-            banheiro_feminino: "pendente",
-            banheiro_hc_feminino: "pendente",
-            copa: "pendente",
-            area_servico: "pendente",
-            area_cozinha: "pendente",
-            area_bar: "pendente",
+            salao: "pendente" as ChecklistStatus,
+            banheiro_masculino: "pendente" as ChecklistStatus,
+            banheiro_hc_masculino: "pendente" as ChecklistStatus,
+            banheiro_feminino: "pendente" as ChecklistStatus,
+            banheiro_hc_feminino: "pendente" as ChecklistStatus,
+            copa: "pendente" as ChecklistStatus,
+            area_servico: "pendente" as ChecklistStatus,
+            area_cozinha: "pendente" as ChecklistStatus,
+            area_bar: "pendente" as ChecklistStatus,
           },
-          buffet: "pendente",
-          geladeira: "pendente",
+          buffet: "pendente" as ChecklistStatus,
+          geladeira: "pendente" as ChecklistStatus,
         },
         notes: valid.notes ?? null,
       })

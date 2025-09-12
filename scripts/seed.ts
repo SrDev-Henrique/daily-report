@@ -3,6 +3,7 @@ import { db } from "../src/drizzle/db";
 import { users } from "../src/drizzle/schema/user";
 import "dotenv/config";
 import { rounds } from "../src/drizzle/schema/rounds";
+import type { status } from "@/lib/schema/types";
 
 async function seed() {
   // cria 2 usuários (sem hash — para dev; substitua por hash em prod)
@@ -31,23 +32,29 @@ async function seed() {
   // cria algumas rondas
   await db.insert(rounds).values([
     {
+      id: 1,
+      date: today.toISOString(),
+      index: 1,
       created_at: today,
+      started_at: today,
+      finished_at: today,
+      duration: 0,
       user_id: 1,
-      status: "pendente",
+      status: "pendente" as status,
       checklist: {
         limpeza: {
-          salao: "pendente",
-          banheiro_masculino: "pendente",
-          banheiro_hc_masculino: "pendente",
-          banheiro_feminino: "pendente",
-          banheiro_hc_feminino: "pendente",
-          copa: "pendente",
-          area_servico: "pendente",
-          area_cozinha: "pendente",
-          area_bar: "pendente",
+          salao: "pendente" as status,
+          banheiro_masculino: "pendente" as status,
+          banheiro_hc_masculino: "pendente" as status,
+          banheiro_feminino: "pendente" as status,
+          banheiro_hc_feminino: "pendente" as status,
+          copa: "pendente" as status,
+          area_servico: "pendente" as status,
+          area_cozinha: "pendente" as status,
+          area_bar: "pendente" as status,
         },
-        buffet: "pendente",
-        geladeira: "pendente",
+        buffet: "pendente" as status,
+        geladeira: "pendente" as status,
       },
       notes: "Primeira ronda de teste",
     },

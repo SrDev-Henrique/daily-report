@@ -26,6 +26,7 @@ export type RoundsUpdateData = {
   started_at?: Date;
   finished_at?: Date;
   duration?: number;
+  index?: number;
 };
 
 export type FeedbackUpdateData = {
